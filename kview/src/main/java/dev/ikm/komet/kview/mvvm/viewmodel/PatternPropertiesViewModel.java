@@ -16,6 +16,8 @@
 package dev.ikm.komet.kview.mvvm.viewmodel;
 
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PATTERN_TOPIC;
+import org.carlfx.axonic.StateMachine;
+
 import java.util.UUID;
 
 public class PatternPropertiesViewModel extends FormViewModel {
@@ -39,6 +41,10 @@ public class PatternPropertiesViewModel extends FormViewModel {
     // if the user has already at least one Field, then this is true
     public static String DISPLAY_FIELDS_EDIT_MODE = "fieldsEditMode";
 
+    public static String STATE_MACHINE = "stateMachine";
+
+    public static String BUMPOUT_TOGGLE_OPENED = "bumpOutToggleOpened";
+
     public PatternPropertiesViewModel() {
         super();
                 addProperty(PATTERN_TOPIC, (UUID) null)
@@ -51,6 +57,12 @@ public class PatternPropertiesViewModel extends FormViewModel {
                 .addProperty(DISPLAY_FQN_EDIT_MODE, false)
                 .addProperty(DISPLAY_OTHER_NAME_EDIT_MODE, false)
                 .addProperty(DISPLAY_FIELDS_EDIT_MODE, false)
+                .addProperty(STATE_MACHINE, (StateMachine) null)
+                // if the properties bump out was intentionally opened, that is: the user
+                // clicked the toggle button at the top right of the properties details window
+                // then this flag will be true.  If they open it with a pencil button then this will be false.
+                // if the properties bump out is closed, then this will be reset to false
+                .addProperty(BUMPOUT_TOGGLE_OPENED, false)
         ;
     }
 

@@ -30,9 +30,11 @@ import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.NAME_TYPE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.STATUS;
 import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.TITLE_TEXT;
 import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.VIEW_PROPERTIES;
+import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.BUMPOUT_TOGGLE_OPENED;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.DISPLAY_FQN_EDIT_MODE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.DISPLAY_OTHER_NAME_EDIT_MODE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PATTERN_TOPIC;
+import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.STATE_MACHINE;
 import static dev.ikm.tinkar.terms.TinkarTerm.FULLY_QUALIFIED_NAME_DESCRIPTION_TYPE;
 import static dev.ikm.tinkar.terms.TinkarTerm.REGULAR_NAME_DESCRIPTION_TYPE;
 import dev.ikm.komet.framework.events.EvtBusFactory;
@@ -58,6 +60,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
+import org.carlfx.axonic.StateMachine;
 import org.carlfx.cognitive.loader.InjectViewModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -275,19 +278,26 @@ public class DescriptionNameController {
         }
         LOG.info("Ready to update to the concept view model: " + descrNameViewModel);
 
+        ObjectProperty<StateMachine> stateMachineObjectProperty = patternPropertiesViewModel.getProperty(STATE_MACHINE);
         if (descrNameViewModel.getPropertyValue(NAME_TYPE) == FULLY_QUALIFIED_NAME_DESCRIPTION_TYPE) {
             patternPropertiesViewModel.setPropertyValue(DISPLAY_FQN_EDIT_MODE, true);
             EvtBusFactory.getDefaultEvtBus().publish(getPatternTopic(), new PatternDescriptionEvent(submitButton,
                     PATTERN_ADD_FQN, descrNameViewModel.create()));
+            stateMachineObjectProperty.get().t("AddedFQN");
         } else if (descrNameViewModel.getPropertyValue(NAME_TYPE) == REGULAR_NAME_DESCRIPTION_TYPE) {
             patternPropertiesViewModel.setPropertyValue(DISPLAY_OTHER_NAME_EDIT_MODE, true);
             EvtBusFactory.getDefaultEvtBus().publish(getPatternTopic(), new PatternDescriptionEvent(submitButton,
                     PATTERN_ADD_OTHER_NAME, descrNameViewModel.create()));
+            stateMachineObjectProperty.get().t("AddedOtherName");
         }
 
-        //publish close env
-        EvtBusFactory.getDefaultEvtBus().publish(getPatternTopic(),
-                new PropertyPanelEvent(actionEvent.getSource(), CLOSE_PANEL));
+        // publish close env only if they opened with the 'pencil button' which is an intentional opening
+        // if it was from the properties toggle, then leave the panel open and use the state machine to determine the
+        // next panel
+        if (!(boolean)patternPropertiesViewModel.getPropertyValue(BUMPOUT_TOGGLE_OPENED)) {
+            EvtBusFactory.getDefaultEvtBus().publish(getPatternTopic(),
+                    new PropertyPanelEvent(actionEvent.getSource(), CLOSE_PANEL));
+        }
         clearView();
     }
 

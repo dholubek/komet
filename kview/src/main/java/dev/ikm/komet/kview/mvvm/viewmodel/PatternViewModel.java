@@ -15,35 +15,27 @@
  */
 package dev.ikm.komet.kview.mvvm.viewmodel;
 
-import static dev.ikm.tinkar.terms.EntityProxy.Pattern;
 import static dev.ikm.tinkar.terms.EntityProxy.Concept;
+import static dev.ikm.tinkar.terms.EntityProxy.Pattern;
 import static dev.ikm.tinkar.terms.TinkarTerm.ACCEPTABLE;
-import static dev.ikm.tinkar.terms.TinkarTerm.DESCRIPTION_NOT_CASE_SENSITIVE;
-import static dev.ikm.tinkar.terms.TinkarTerm.DESCRIPTION_PATTERN;
-import static dev.ikm.tinkar.terms.TinkarTerm.ENGLISH_LANGUAGE;
-import static dev.ikm.tinkar.terms.TinkarTerm.PREFERRED;
-import static dev.ikm.tinkar.terms.TinkarTerm.REGULAR_NAME_DESCRIPTION_TYPE;
-import dev.ikm.tinkar.component.FieldDefinition;
-import dev.ikm.tinkar.composer.Composer;
-import dev.ikm.tinkar.composer.Session;
-import dev.ikm.tinkar.composer.assembler.PatternAssembler;
-import dev.ikm.tinkar.composer.assembler.SemanticAssembler;
-import dev.ikm.tinkar.composer.template.FullyQualifiedName;
-import dev.ikm.tinkar.composer.template.Synonym;
-import dev.ikm.tinkar.composer.template.USDialect;
 import dev.ikm.komet.framework.view.ViewProperties;
 import dev.ikm.komet.kview.mvvm.model.DescrName;
 import dev.ikm.komet.kview.mvvm.model.PatternDefinition;
 import dev.ikm.komet.kview.mvvm.model.PatternField;
 import dev.ikm.tinkar.common.id.PublicId;
 import dev.ikm.tinkar.common.id.PublicIds;
-import dev.ikm.tinkar.entity.EntityService;
+import dev.ikm.tinkar.composer.Composer;
+import dev.ikm.tinkar.composer.Session;
+import dev.ikm.tinkar.composer.assembler.PatternAssembler;
+import dev.ikm.tinkar.composer.template.FullyQualifiedName;
+import dev.ikm.tinkar.composer.template.Synonym;
+import dev.ikm.tinkar.composer.template.USDialect;
 import dev.ikm.tinkar.terms.EntityFacade;
 import dev.ikm.tinkar.terms.State;
 import dev.ikm.tinkar.terms.TinkarTerm;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleListProperty;
 import javafx.collections.ObservableList;
+import org.carlfx.axonic.StateMachine;
 import org.carlfx.cognitive.validator.ValidationMessage;
 import org.carlfx.cognitive.validator.ValidationResult;
 import org.carlfx.cognitive.viewmodel.ViewModel;
@@ -53,9 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class PatternViewModel extends FormViewModel {
 
@@ -82,6 +72,8 @@ public class PatternViewModel extends FormViewModel {
 
     public static String PATTERN_TOPIC = "patternTopic";
 
+    public static String STATE_MACHINE = "stateMachine";
+
     public static String PURPOSE_TEXT = "purposeText";
 
     public static String MEANING_TEXT = "meaningText";
@@ -96,10 +88,14 @@ public class PatternViewModel extends FormViewModel {
 
     public static String IS_INVALID = "IS_INVALID";
 
+    public static String BUMPOUT_TOGGLE_OPENED = "bumpOutToggleOpened";
+
     public PatternViewModel() {
         super();
             addProperty(VIEW_PROPERTIES, (ViewProperties) null)
                     .addProperty(PATTERN_TOPIC, (UUID) null)
+                    .addProperty(STATE_MACHINE, (StateMachine) null)
+                    .addProperty(BUMPOUT_TOGGLE_OPENED, false)
                     .addProperty(STAMP_VIEW_MODEL, (ViewModel) null)
                     .addProperty(DEFINITION_VIEW_MODEL, (ViewModel) null)
                     .addProperty(FQN_DESCRIPTION_NAME, (DescrName) null)

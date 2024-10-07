@@ -33,6 +33,7 @@ import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.FQN_CASE_SIGNI
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.FQN_DESCRIPTION_NAME;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.FQN_DESCRIPTION_NAME_TEXT;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.FQN_LANGUAGE;
+import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.BUMPOUT_TOGGLE_OPENED;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.IS_INVALID;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.MEANING_DATE_STR;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.MEANING_TEXT;
@@ -40,6 +41,8 @@ import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.OTHER_NAMES;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PATTERN_TOPIC;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PURPOSE_DATE_STR;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PURPOSE_TEXT;
+import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.STATE_MACHINE;
+import static dev.ikm.komet.kview.state.pattern.PatternState.EMPTY_PATTERN;
 import dev.ikm.komet.framework.events.EvtBusFactory;
 import dev.ikm.komet.framework.events.EvtType;
 import dev.ikm.komet.framework.events.Subscriber;
@@ -52,6 +55,7 @@ import dev.ikm.komet.kview.events.pattern.ShowPatternFormInBumpOutEvent;
 import dev.ikm.komet.kview.fxutils.MenuHelper;
 import dev.ikm.komet.kview.mvvm.model.DescrName;
 import dev.ikm.komet.kview.mvvm.model.PatternField;
+import dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel;
 import dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel;
 import dev.ikm.tinkar.coordinate.view.calculator.ViewCalculator;
 import dev.ikm.tinkar.entity.ConceptEntity;
@@ -84,6 +88,8 @@ import javafx.scene.shape.FillRule;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import org.carlfx.axonic.State;
+import org.carlfx.axonic.StateMachine;
 import org.carlfx.cognitive.loader.Config;
 import org.carlfx.cognitive.loader.FXMLMvvmLoader;
 import org.carlfx.cognitive.loader.InjectViewModel;
@@ -216,16 +222,22 @@ public class PatternDetailsController {
         otherNamesVBox.getChildren().clear();
         // listen for open and close events
         patternPropertiesEventSubscriber = (evt) -> {
+            StateMachine stateMachine = getStateMachine();
+            State currentState = stateMachine.currentState();
+            LOG.info(currentState.getName());
             if (evt.getEventType() == CLOSE_PANEL) {
-                LOG.info("propBumpOutListener - Close Properties bumpout toggle = " + propertiesToggleButton.isSelected());
+                LOG.info("propBumpOutListener - Close Properties bump out toggle = " + propertiesToggleButton.isSelected());
                 propertiesToggleButton.setSelected(false);
                 if (isOpen(propertiesSlideoutTrayPane)) {
+                    // reset to default value: false
+                    patternViewModel.setPropertyValue(BUMPOUT_TOGGLE_OPENED, false);
                     slideIn(propertiesSlideoutTrayPane, detailsOuterBorderPane);
                 }
             } else if (evt.getEventType() == OPEN_PANEL) {
-                LOG.info("propBumpOutListener - Opening Properties bumpout toggle = " + propertiesToggleButton.isSelected());
+                LOG.info("propBumpOutListener - Opening Properties bump out toggle = " + propertiesToggleButton.isSelected());
                 propertiesToggleButton.setSelected(true);
                 if (isClosed(propertiesSlideoutTrayPane)) {
+                    patternViewModel.setPropertyValue(BUMPOUT_TOGGLE_OPENED, true);
                     slideOut(propertiesSlideoutTrayPane, detailsOuterBorderPane);
                 }
             }
@@ -340,6 +352,11 @@ public class PatternDetailsController {
         fqnAddDateLabel.textProperty().bind(dateStrProp);
         // Setup Properties
         setupProperties();
+    }
+
+
+    private StateMachine getStateMachine() {
+        return patternViewModel.getPropertyValue(STATE_MACHINE);
     }
 
     private ContextMenu createContextMenuForPatternField(PatternField patternField) {
@@ -479,9 +496,19 @@ public class PatternDetailsController {
         // Load Concept Properties View Panel (FXML & Controller)
         Config config = new Config(PATTERN_PROPERTIES_VIEW_FXML_URL)
                 .updateViewModel("patternPropertiesViewModel",
-                        (patternPropertiesViewModel) -> patternPropertiesViewModel
-                                .setPropertyValue(PATTERN_TOPIC, patternViewModel.getPropertyValue(PATTERN_TOPIC))
-                                .setPropertyValue(VIEW_PROPERTIES, patternViewModel.getPropertyValue(VIEW_PROPERTIES) ));
+                        (patternPropertiesViewModel) -> {
+                            patternPropertiesViewModel
+                                    .setPropertyValue(PATTERN_TOPIC, patternViewModel.getPropertyValue(PATTERN_TOPIC))
+                                    .setPropertyValue(VIEW_PROPERTIES, patternViewModel.getPropertyValue(VIEW_PROPERTIES))
+                                    .setPropertyValue(STATE_MACHINE, patternViewModel.getPropertyValue(STATE_MACHINE));
+                            // keep the bump out toggle opened flag in sync between the two view models
+                            patternPropertiesViewModel.getProperty(PatternPropertiesViewModel.BUMPOUT_TOGGLE_OPENED)
+                                    .bindBidirectional(patternViewModel.getProperty(BUMPOUT_TOGGLE_OPENED));
+                            // keep the state machine in sync between the two view models
+                            patternPropertiesViewModel.getProperty(PatternPropertiesViewModel.STATE_MACHINE)
+                                    .bindBidirectional(patternViewModel.getProperty(STATE_MACHINE));
+                        });
+
 
         JFXNode<BorderPane, PropertiesController> propsFXMLLoader = FXMLMvvmLoader.make(config);
         this.propertiesBorderPane = propsFXMLLoader.node();

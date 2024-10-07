@@ -22,10 +22,13 @@ import dev.ikm.komet.framework.events.EvtType;
 import dev.ikm.komet.framework.events.Subscriber;
 import dev.ikm.komet.framework.view.ViewProperties;
 import dev.ikm.komet.kview.events.pattern.PatternDefinitionEvent;
+import dev.ikm.komet.kview.events.pattern.PatternDescriptionEvent;
 import dev.ikm.komet.kview.events.pattern.PropertyPanelEvent;
 import dev.ikm.komet.kview.events.pattern.ShowPatternFormInBumpOutEvent;
+import dev.ikm.komet.kview.mvvm.model.DescrName;
 import dev.ikm.komet.kview.mvvm.view.descriptionname.DescriptionNameController;
 import dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel;
+import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Toggle;
@@ -34,6 +37,7 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.SVGPath;
+import org.carlfx.axonic.StateMachine;
 import org.carlfx.cognitive.loader.*;
 import org.carlfx.cognitive.viewmodel.ViewModel;
 import org.slf4j.Logger;
@@ -43,6 +47,7 @@ import java.net.URL;
 import java.util.Optional;
 import java.util.UUID;
 
+import static dev.ikm.komet.kview.events.pattern.PatternDefinitionEvent.PATTERN_DEFINITION;
 import static dev.ikm.komet.kview.events.pattern.PropertyPanelEvent.OPEN_PANEL;
 import static dev.ikm.komet.kview.events.pattern.ShowPatternFormInBumpOutEvent.*;
 import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.CREATE;
@@ -52,6 +57,9 @@ import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.*;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternFieldsViewModel.TOTAL_EXISTING_FIELDS;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.*;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PATTERN_TOPIC;
+import static dev.ikm.komet.kview.state.pattern.PatternState.ADDED_DEFINITIONS;
+import static dev.ikm.komet.kview.state.pattern.PatternState.ADDING_FQN;
+import static dev.ikm.komet.kview.state.pattern.PatternState.ADDING_OTHER_NAME;
 import static dev.ikm.tinkar.terms.TinkarTerm.FULLY_QUALIFIED_NAME_DESCRIPTION_TYPE;
 import static dev.ikm.tinkar.terms.TinkarTerm.REGULAR_NAME_DESCRIPTION_TYPE;
 
@@ -83,16 +91,16 @@ public class PropertiesController {
 
 
     @FXML
-    private SVGPath commentsButton;
+    private SVGPath commentsToggleButton;
 
     @FXML
-    private ToggleButton addEditButton;
+    private ToggleButton addEditToggleButton;
 
     @FXML
-    private ToggleButton historyButton;
+    private ToggleButton historyToggleButton;
 
     @FXML
-    private ToggleButton instancesButton;
+    private ToggleButton instancesToggleButton;
 
     @FXML
     private ToggleGroup propertyToggleButtonGroup;
@@ -123,6 +131,8 @@ public class PropertiesController {
     private Subscriber<PropertyPanelEvent> showPropertyPanelSubscriber;
 
     private Subscriber<PatternDefinitionEvent> patternDefinitionEventSubscriber;
+
+    private Subscriber<PatternDescriptionEvent> patternDescriptionEventSubscriber;
 
     @FXML
     private void initialize() {
@@ -156,11 +166,14 @@ public class PropertiesController {
         patternFieldsPane = patternFieldsJFXNode.node();
         patternFieldsController.setViewProperties(getViewProperties());
 
-        JFXNode<Pane, PatternFormChooserController> patternFormJFXNode = FXMLMvvmLoader.make(PATTERN_FORM_CHOOSER_FXML_URL,
-                new PatternFormChooserController(patternPropertiesViewModel.getPropertyValue(PATTERN_TOPIC)));
+        // set up "form chooser" which is a button form for DEFINITIONS | DESCRIPTIONS | FIELDS
+        Config patternFormChooserConfig = new Config(PATTERN_FORM_CHOOSER_FXML_URL)
+                .addNamedViewModel(new NamedVm("patternPropertiesViewModel", patternPropertiesViewModel));
+        JFXNode<Pane, PatternFormChooserController> patternFormJFXNode = FXMLMvvmLoader.make(patternFormChooserConfig);
         patternFormChooserController = patternFormJFXNode.controller();
         patternFormChooserPane = patternFormJFXNode.node();
 
+        // set up "description chooser" which is a button form for FULLLY QUALIFIED NAME | OTHER NAME
         Config descrFormconfig = new Config(DESCRIPTION_FORM_CHOOSER_FXML_URL)
                 .addNamedViewModel(new NamedVm("patternPropertiesViewModel", patternPropertiesViewModel));
         JFXNode<Pane, DescriptionFormChooserController> descriptionFormJFXNode = FXMLMvvmLoader.make(descrFormconfig);
@@ -188,7 +201,7 @@ public class PropertiesController {
             } else if (evt.getEventType() == DESCRIPTION_NAME) {
                 currentEditPane = descriptionNameChooserPane;
             }
-            this.addEditButton.setSelected(true);
+            this.addEditToggleButton.setSelected(true);
             updateEditPane();
         };
         eventBus.subscribe(getPatternTopic(), ShowPatternFormInBumpOutEvent.class, showPatternPanelEventSubscriber);
@@ -206,13 +219,49 @@ public class PropertiesController {
 
         patternDefinitionEventSubscriber = evt -> {
             boolean isInEditMode = patternPropertiesViewModel.getPropertyValue(DISPLAY_DEFINITION_EDIT_MODE);
-            this.addEditButton.setText(isInEditMode ? "EDIT" : "ADD");
+            this.addEditToggleButton.setText(isInEditMode ? "EDIT" : "ADD");
+            if (evt.getEventType() == PATTERN_DEFINITION) {
+                ObjectProperty<StateMachine> stateMachineObjectProperty = patternPropertiesViewModel.getProperty(STATE_MACHINE);
+                stateMachineObjectProperty.get().t("addAllDefinitions");
+                // pattern form chooser pane needs to say EDIT for DEFINITIONS at this point
+                patternFormChooserController.setDefinitionButtonToEdit();
+                //FIXME can we get rid of these flags if we are using the state machine?
+                patternPropertiesViewModel.setPropertyValue(DISPLAY_DEFINITION_EDIT_MODE, true);
+                currentEditPane = patternFormChooserPane;
+                updateEditPane();
+            }
         };
         EvtBusFactory.getDefaultEvtBus().subscribe(getPatternTopic(), PatternDefinitionEvent.class, patternDefinitionEventSubscriber);
-        this.addEditButton.setSelected(true);
+        this.addEditToggleButton.setSelected(true);
+
+        patternDescriptionEventSubscriber = evt -> {
+            // this event subscription only applies if the user is navigating from the properties toggle
+            // and not the pencil icons
+            if (!(boolean) patternPropertiesViewModel.getPropertyValue(BUMPOUT_TOGGLE_OPENED)) {
+                return;
+            }
+            DescrName descrName = evt.getDescrName();
+            ObjectProperty<StateMachine> stateMachineObjectProperty = patternPropertiesViewModel.getProperty(STATE_MACHINE);
+            if (evt.getEventType() == PatternDescriptionEvent.PATTERN_ADD_FQN) {
+                if (stateMachineObjectProperty.get().currentState() == ADDING_FQN) {
+                    stateMachineObjectProperty.get().t("addedFqn");
+                }
+                currentEditPane = descriptionNameChooserPane; //FIXME only if FQN is done and no other names?
+                updateEditPane();
+            } else if (evt.getEventType() == PatternDescriptionEvent.PATTERN_ADD_OTHER_NAME) {
+                if (stateMachineObjectProperty.get().currentState() == ADDING_OTHER_NAME) {
+                    stateMachineObjectProperty.get().t("addedOtherName");
+                }
+                currentEditPane = patternFieldsPane;
+                updateEditPane();
+            }
+        };
+        EvtBusFactory.getDefaultEvtBus().subscribe(getPatternTopic(),  PatternDescriptionEvent.class, patternDescriptionEventSubscriber);
     }
 
     private void setupBumpOut() {
+        //FIXME can we get rid of these flags if we are using the state machine?
+        //FIXME replace them with checking the state instead...
         if (patternPropertiesViewModel.shouldShowFormChooser()) {
             currentEditPane = patternFormChooserPane;
         } else if (patternPropertiesViewModel.shouldShowDescriptionChooser()) {
@@ -275,7 +324,7 @@ public class PropertiesController {
     private void updateDefaultSelectedViews() {
         // default to selected tab (History)
         Toggle tab = propertyToggleButtonGroup.getSelectedToggle();
-        if (addEditButton.equals(tab)) {
+        if (addEditToggleButton.equals(tab)) {
             contentBorderPane.setCenter(null);
         }
     }
@@ -284,15 +333,15 @@ public class PropertiesController {
     private void showAddEditView(ActionEvent event) {
         LOG.info("Show Add/Edit View " + event);
         event.consume();
-        this.addEditButton.setSelected(true);
+        this.addEditToggleButton.setSelected(true);
         contentBorderPane.setCenter(currentEditPane);
         if (currentEditPane == descriptionNameChooserPane) {
             // if we will display EDIT for either FQN or Other Name, the display EDIT, otherwise ADD
             if ((boolean) patternPropertiesViewModel.getPropertyValue(DISPLAY_FQN_EDIT_MODE)
                     || (boolean) patternPropertiesViewModel.getPropertyValue(DISPLAY_OTHER_NAME_EDIT_MODE)) {
-                this.addEditButton.setText("EDIT");
+                this.addEditToggleButton.setText("EDIT");
             } else {
-                this.addEditButton.setText("ADD");
+                this.addEditToggleButton.setText("ADD");
             }
         }
     }

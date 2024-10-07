@@ -20,7 +20,9 @@ import static dev.ikm.komet.kview.events.pattern.PropertyPanelEvent.CLOSE_PANEL;
 import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.IS_INVALID;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternDefinitionViewModel.MEANING_ENTITY;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternDefinitionViewModel.PURPOSE_ENTITY;
+import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.BUMPOUT_TOGGLE_OPENED;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.DISPLAY_DEFINITION_EDIT_MODE;
+import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.STATE_MACHINE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PATTERN_TOPIC;
 import dev.ikm.komet.framework.Identicon;
 import dev.ikm.komet.framework.events.EvtBusFactory;
@@ -30,12 +32,11 @@ import dev.ikm.komet.kview.mvvm.model.PatternDefinition;
 import dev.ikm.komet.kview.mvvm.viewmodel.PatternDefinitionViewModel;
 import dev.ikm.komet.kview.mvvm.viewmodel.PatternFieldsViewModel;
 import dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel;
+import dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel;
 import dev.ikm.tinkar.common.id.PublicId;
 import dev.ikm.tinkar.entity.ConceptEntity;
 import dev.ikm.tinkar.entity.Entity;
 import dev.ikm.tinkar.entity.EntityService;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.event.ActionEvent;
@@ -55,6 +56,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import org.carlfx.axonic.StateMachine;
 import org.carlfx.cognitive.loader.InjectViewModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -545,9 +547,17 @@ public class PatternDefinitionController {
         // pattern properties view model keeping track of UI state elements
         patternPropertiesViewModel.setPropertyValue(DISPLAY_DEFINITION_EDIT_MODE, patternDefinition.purpose() != null && patternDefinition.meaning() != null);
 
-        //publish close env
-        EvtBusFactory.getDefaultEvtBus().publish(patternDefinitionViewModel.getPropertyValue(PATTERN_TOPIC),
-                new PropertyPanelEvent(actionEvent.getSource(), CLOSE_PANEL));
+        // publish close env only if they opened with the 'pencil button' which is an intentional opening
+        // if it was from the properties toggle, then leave the panel open and use the state machine to determine the
+        // next panel
+        if (!(boolean)patternPropertiesViewModel.getPropertyValue(BUMPOUT_TOGGLE_OPENED)) {
+            EvtBusFactory.getDefaultEvtBus().publish(patternDefinitionViewModel.getPropertyValue(PATTERN_TOPIC),
+                    new PropertyPanelEvent(actionEvent.getSource(), CLOSE_PANEL));
+        }
+
+        ObjectProperty<StateMachine> stateMachineObjectProperty = patternPropertiesViewModel.getProperty(STATE_MACHINE);
+        // definition section is done so make the addAllDefinitions transition
+        stateMachineObjectProperty.get().t("addingDefinitions");
 
         // publish form submission data
         EvtBusFactory.getDefaultEvtBus().publish(patternDefinitionViewModel.getPropertyValue(PATTERN_TOPIC),

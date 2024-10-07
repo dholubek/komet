@@ -23,15 +23,18 @@ import static dev.ikm.komet.kview.events.pattern.ShowPatternFormInBumpOutEvent.S
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.DISPLAY_FQN_EDIT_MODE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.DISPLAY_OTHER_NAME_EDIT_MODE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PATTERN_TOPIC;
+import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.STATE_MACHINE;
 import dev.ikm.komet.framework.events.EvtBusFactory;
 import dev.ikm.komet.framework.events.EvtType;
 import dev.ikm.komet.kview.events.pattern.PropertyPanelEvent;
 import dev.ikm.komet.kview.events.pattern.ShowPatternFormInBumpOutEvent;
 import dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel;
+import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import org.carlfx.axonic.StateMachine;
 import org.carlfx.cognitive.loader.InjectViewModel;
 
 import java.util.UUID;
@@ -70,6 +73,9 @@ public class DescriptionFormChooserController {
 
     @FXML
     private void showFqnForm(ActionEvent actionEvent) {
+        // if we've clicked the show FQN form, then we need apply the AddingFQN transition
+        ObjectProperty<StateMachine> stateMachineObjectProperty = patternPropertiesViewModel.getProperty(STATE_MACHINE);
+        stateMachineObjectProperty.get().t("addingFqn");
         EvtType showFqnEvt = SHOW_ADD_FQN;
         if (actionEvent.getSource() instanceof Button button && button.getText().startsWith("EDIT")) {
             showFqnEvt = SHOW_EDIT_FQN;
@@ -81,9 +87,14 @@ public class DescriptionFormChooserController {
     public UUID getPatternTopic() {
         return patternPropertiesViewModel.getPropertyValue(PATTERN_TOPIC);
     }
+
     @FXML
     private void showOtherNameForm(ActionEvent actionEvent) {
+        // if we've clicked the show Other Name form, then we need apply the AddingFQN transition
+        ObjectProperty<StateMachine> stateMachineObjectProperty = patternPropertiesViewModel.getProperty(STATE_MACHINE);
+        stateMachineObjectProperty.get().t("AddingOtherName");
         EvtType showOtherNameEvt = SHOW_ADD_OTHER_NAME;
+        //FIXME does the chooser ever show EDIT OTHER NAME?  It probably should only be ADD...???
         if (actionEvent.getSource() instanceof Button button && button.getText().startsWith("EDIT")) {
             showOtherNameEvt = SHOW_EDIT_OTHER_NAME;
         }

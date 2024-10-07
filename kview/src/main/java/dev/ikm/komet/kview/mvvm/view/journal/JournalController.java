@@ -50,6 +50,7 @@ import dev.ikm.komet.kview.mvvm.view.reasoner.NextGenReasonerController;
 import dev.ikm.komet.kview.mvvm.view.search.NextGenSearchController;
 import dev.ikm.komet.kview.mvvm.viewmodel.NextGenSearchViewModel;
 import dev.ikm.komet.kview.mvvm.viewmodel.StampViewModel;
+import dev.ikm.komet.kview.state.pattern.PatternStateCreator;
 import dev.ikm.komet.navigator.graph.GraphNavigatorNode;
 import dev.ikm.komet.preferences.ConceptWindowSettings;
 import dev.ikm.komet.preferences.KometPreferences;
@@ -89,6 +90,7 @@ import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import org.carlfx.axonic.StateMachine;
 import org.carlfx.cognitive.loader.*;
 import org.carlfx.cognitive.viewmodel.ValidationViewModel;
 import org.controlsfx.control.PopOver;
@@ -115,6 +117,7 @@ import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.MODULES_PROP
 import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.CREATE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.MODE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PATTERN_TOPIC;
+import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.STATE_MACHINE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.ProgressViewModel.CANCEL_BUTTON_TEXT_PROP;
 import static dev.ikm.komet.kview.mvvm.viewmodel.ProgressViewModel.TASK_PROPERTY;
 import static dev.ikm.komet.kview.mvvm.viewmodel.StampViewModel.PATHS_PROPERTY;
@@ -1353,12 +1356,15 @@ public class JournalController {
         stampViewModel.setPropertyValue(PATHS_PROPERTY, stampViewModel.findAllPaths(viewProperties), true)
                 .setPropertyValue(MODULES_PROPERTY, stampViewModel.findAllModules(viewProperties), true);
 
+        StateMachine patternSM = PatternStateCreator.createPatternStateMachine();
+
         Config patternConfig = new Config(PatternDetailsController.class.getResource("pattern-details.fxml"))
                 .updateViewModel("patternViewModel", (patternViewModel) ->
                         patternViewModel.setPropertyValue(VIEW_PROPERTIES, viewProperties)
                                 .setPropertyValue(MODE, CREATE)
                                 .setPropertyValue(STAMP_VIEW_MODEL, stampViewModel)
                                 .setPropertyValue(PATTERN_TOPIC, UUID.randomUUID())
+                                .setPropertyValue(STATE_MACHINE, patternSM)
                 );
 
         // create lidr window

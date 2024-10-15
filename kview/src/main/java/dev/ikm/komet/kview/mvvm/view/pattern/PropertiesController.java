@@ -57,7 +57,6 @@ import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.*;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternFieldsViewModel.TOTAL_EXISTING_FIELDS;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternPropertiesViewModel.*;
 import static dev.ikm.komet.kview.mvvm.viewmodel.PatternViewModel.PATTERN_TOPIC;
-import static dev.ikm.komet.kview.state.pattern.PatternState.ADDED_DEFINITIONS;
 import static dev.ikm.komet.kview.state.pattern.PatternState.ADDING_FQN;
 import static dev.ikm.komet.kview.state.pattern.PatternState.ADDING_OTHER_NAME;
 import static dev.ikm.tinkar.terms.TinkarTerm.FULLY_QUALIFIED_NAME_DESCRIPTION_TYPE;
@@ -71,10 +70,6 @@ public class PropertiesController {
     private static final URL PATTERN_DESCRIPTION_FXML_URL = DescriptionNameController.class.getResource("description-name.fxml");
 
     private static final URL PATTERN_FIELDS_FXML_URL = PatternFieldsController.class.getResource("pattern-fields.fxml");
-
-    private static final URL PATTERN_FORM_CHOOSER_FXML_URL = PatternFormChooserController.class.getResource("pattern-form-chooser.fxml");
-
-    private static final URL DESCRIPTION_FORM_CHOOSER_FXML_URL = DescriptionFormChooserController.class.getResource("pattern-description-chooser.fxml");
 
     private static final String ADD_FQN_TITLE_TEXT = "Add Description: Add Fully Qualified Name";
 
@@ -118,11 +113,7 @@ public class PropertiesController {
 
     private Pane patternFieldsPane;
 
-    private PatternFormChooserController patternFormChooserController;
-
     private Pane patternFormChooserPane;
-
-    private DescriptionFormChooserController descriptionFormChooserController;
 
     private Pane descriptionNameChooserPane;
 
@@ -165,20 +156,6 @@ public class PropertiesController {
         patternFieldsController = patternFieldsJFXNode.controller();
         patternFieldsPane = patternFieldsJFXNode.node();
         patternFieldsController.setViewProperties(getViewProperties());
-
-        // set up "form chooser" which is a button form for DEFINITIONS | DESCRIPTIONS | FIELDS
-        Config patternFormChooserConfig = new Config(PATTERN_FORM_CHOOSER_FXML_URL)
-                .addNamedViewModel(new NamedVm("patternPropertiesViewModel", patternPropertiesViewModel));
-        JFXNode<Pane, PatternFormChooserController> patternFormJFXNode = FXMLMvvmLoader.make(patternFormChooserConfig);
-        patternFormChooserController = patternFormJFXNode.controller();
-        patternFormChooserPane = patternFormJFXNode.node();
-
-        // set up "description chooser" which is a button form for FULLLY QUALIFIED NAME | OTHER NAME
-        Config descrFormconfig = new Config(DESCRIPTION_FORM_CHOOSER_FXML_URL)
-                .addNamedViewModel(new NamedVm("patternPropertiesViewModel", patternPropertiesViewModel));
-        JFXNode<Pane, DescriptionFormChooserController> descriptionFormJFXNode = FXMLMvvmLoader.make(descrFormconfig);
-        descriptionFormChooserController = descriptionFormJFXNode.controller();
-        descriptionNameChooserPane = descriptionFormJFXNode.node();
 
         // initially a default selected tab and view is shown
         updateDefaultSelectedViews();
@@ -224,7 +201,7 @@ public class PropertiesController {
                 ObjectProperty<StateMachine> stateMachineObjectProperty = patternPropertiesViewModel.getProperty(STATE_MACHINE);
                 stateMachineObjectProperty.get().t("addAllDefinitions");
                 // pattern form chooser pane needs to say EDIT for DEFINITIONS at this point
-                patternFormChooserController.setDefinitionButtonToEdit();
+                //patternFormChooserController.setDefinitionButtonToEdit();
                 //FIXME can we get rid of these flags if we are using the state machine?
                 patternPropertiesViewModel.setPropertyValue(DISPLAY_DEFINITION_EDIT_MODE, true);
                 currentEditPane = patternFormChooserPane;

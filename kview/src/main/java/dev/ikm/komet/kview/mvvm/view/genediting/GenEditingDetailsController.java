@@ -27,7 +27,10 @@ import static dev.ikm.komet.kview.fxutils.SlideOutTrayHelper.slideOut;
 import static dev.ikm.komet.kview.fxutils.ViewportHelper.clipChildren;
 import static dev.ikm.komet.kview.klfields.KlFieldHelper.retrieveCommittedLatestVersion;
 import static dev.ikm.komet.kview.mvvm.viewmodel.DescrNameViewModel.MODULES_PROPERTY;
+import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.CREATE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.CURRENT_JOURNAL_WINDOW_TOPIC;
+import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.EDIT;
+import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.MODE;
 import static dev.ikm.komet.kview.mvvm.viewmodel.FormViewModel.VIEW_PROPERTIES;
 import static dev.ikm.komet.kview.mvvm.viewmodel.GenEditingViewModel.PATTERN;
 import static dev.ikm.komet.kview.mvvm.viewmodel.GenEditingViewModel.REF_COMPONENT;
@@ -220,11 +223,14 @@ public class GenEditingDetailsController {
 
         // if the semantic is null, then we generate a default one
         if (semantic == null) {
+            genEditingViewModel.setPropertyValue(MODE, CREATE);
             EntityFacade pattern = genEditingViewModel.getPropertyValue(PATTERN);
 
             // create empty semantic for the pattern and set it in the view model
             semantic = genEditingViewModel.createEmptySemantic(pattern);
             genEditingViewModel.setPropertyValue(SEMANTIC, semantic);
+        } else {
+            genEditingViewModel.setPropertyValue(MODE, EDIT);
         }
 
         StampCalculator stampCalculator = getViewProperties().calculator().stampCalculator();
@@ -346,11 +352,13 @@ public class GenEditingDetailsController {
             LOG.warn("Must select a valid module for Stamp.");
             return;
         }
-        moduleText.setText(moduleEntity.description());
-        ConceptEntity pathEntity = stampViewModel.getValue(PATH);
-        pathText.setText(pathEntity.description());
-        State status = stampViewModel.getValue(STATUS);
-        statusText.setText(status.name());
+        if (genEditingViewModel.getPropertyValue(MODE) == EDIT) {
+            moduleText.setText(moduleEntity.description());
+            ConceptEntity pathEntity = stampViewModel.getValue(PATH);
+            pathText.setText(pathEntity.description());
+            State status = stampViewModel.getValue(STATUS);
+            statusText.setText(status.name());
+        }
     }
 
     public ValidationViewModel getStampViewModel() {
@@ -444,6 +452,9 @@ public class GenEditingDetailsController {
                 if (isClosed(propertiesSlideoutTrayPane)) {
                     slideOut(propertiesSlideoutTrayPane, detailsOuterBorderPane);
                 }
+            } else if (evt.getEventType() == PropertyPanelEvent.NO_SELECTION_MADE_PANEL) {
+                //FIXME
+                // open and change what is in the center...? need to figure out what pane(s) were are swapping or changing here
             }
         };
         EvtBusFactory.getDefaultEvtBus().subscribe(genEditingViewModel.getPropertyValue(WINDOW_TOPIC), PropertyPanelEvent.class, propertiesEventSubscriber);

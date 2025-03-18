@@ -31,6 +31,8 @@ public class GenEditingKlWindow extends AbstractEntityChapterKlWindow {
      */
     private JFXNode<Pane, GenEditingDetailsController> jfxNode;
 
+    private UUID windowTopic;
+
     /**
      * Constructs a new editing window for a specific semantic entity.
      *
@@ -56,11 +58,12 @@ public class GenEditingKlWindow extends AbstractEntityChapterKlWindow {
             refComponent = EntityService.get().getEntity(entity.referencedComponentNid()).get();
         }
 
+        windowTopic = UUID.randomUUID();
         Config config = new Config(GenEditingDetailsController.class.getResource("genediting-details.fxml"))
                 .updateViewModel("genEditingViewModel", genEditingViewModel ->
                         genEditingViewModel.setPropertyValue(VIEW_PROPERTIES, viewProperties)
                                 .setPropertyValue(CURRENT_JOURNAL_WINDOW_TOPIC, journalTopic)
-                                .setPropertyValue(WINDOW_TOPIC, UUID.randomUUID())
+                                .setPropertyValue(WINDOW_TOPIC, windowTopic)
 //                                .setPropertyValue(STAMP_VIEW_MODEL, stampViewModel)
                                 .setPropertyValue(FIELDS_COLLECTION, new ArrayList<String>()) // Ordered collection of Fields
                                 .setPropertyValue(REF_COMPONENT, refComponent)
@@ -86,5 +89,9 @@ public class GenEditingKlWindow extends AbstractEntityChapterKlWindow {
      */
     public void onShown() {
         jfxNode.controller().putTitlePanesArrowOnRight();
+    }
+
+    public UUID getWindowTopic() {
+        return windowTopic;
     }
 }

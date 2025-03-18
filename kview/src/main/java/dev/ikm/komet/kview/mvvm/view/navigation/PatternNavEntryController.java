@@ -23,6 +23,7 @@ import dev.ikm.komet.framework.events.EvtBusFactory;
 import dev.ikm.komet.framework.view.ViewProperties;
 import dev.ikm.komet.kview.controls.KometIcon;
 import dev.ikm.komet.kview.events.genediting.MakeGenEditingWindowEvent;
+import dev.ikm.komet.kview.events.genediting.PropertyPanelEvent;
 import dev.ikm.komet.kview.events.pattern.MakePatternWindowEvent;
 import dev.ikm.komet.kview.mvvm.model.DragAndDropInfo;
 import dev.ikm.komet.kview.mvvm.model.DragAndDropType;

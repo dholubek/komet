@@ -22,7 +22,6 @@ import static dev.ikm.komet.kview.events.EventTopics.JOURNAL_TOPIC;
 import static dev.ikm.komet.kview.events.JournalTileEvent.UPDATE_JOURNAL_TILE;
 import static dev.ikm.komet.kview.events.MakeConceptWindowEvent.OPEN_CONCEPT_FROM_CONCEPT;
 import static dev.ikm.komet.kview.events.MakeConceptWindowEvent.OPEN_CONCEPT_FROM_SEMANTIC;
-import static dev.ikm.komet.kview.events.genediting.MakeGenEditingWindowEvent.OPEN_GEN_AUTHORING;
 import static dev.ikm.komet.kview.fxutils.SlideOutTrayHelper.setupSlideOutTrayPane;
 import static dev.ikm.komet.kview.lidr.mvvm.viewmodel.LidrViewModel.CREATE;
 import static dev.ikm.komet.kview.lidr.mvvm.viewmodel.LidrViewModel.CURRENT_JOURNAL_WINDOW_TOPIC;
@@ -77,7 +76,6 @@ import dev.ikm.komet.kview.events.JournalTileEvent;
 import dev.ikm.komet.kview.events.MakeConceptWindowEvent;
 import dev.ikm.komet.kview.events.ShowNavigationalPanelEvent;
 import dev.ikm.komet.kview.events.genediting.MakeGenEditingWindowEvent;
-import dev.ikm.komet.kview.events.genediting.PropertyPanelEvent;
 import dev.ikm.komet.kview.events.pattern.MakePatternWindowEvent;
 import dev.ikm.komet.kview.events.reasoner.CloseReasonerPanelEvent;
 import dev.ikm.komet.kview.fxutils.MenuHelper;
@@ -362,14 +360,8 @@ public class JournalController {
         journalEventBus.subscribe(JOURNAL_TOPIC, MakePatternWindowEvent.class, makePatternWindowEventSubscriber);
 
         // Listening for when a General authoring Window needs to be summoned.
-        Subscriber<MakeGenEditingWindowEvent> makeGenEditWindowEventSubscriber = evt -> {
-            makeGenEditWindow(evt.getComponent(), evt.getViewProperties(), true); // fix goes here
-            if (evt.getEventType() == OPEN_GEN_AUTHORING) {
-                // send event to open the properties window
-//                EvtBusFactory.getDefaultEvtBus().publish(CURRENT_JOURNAL_WINDOW_TOPIC,
-//                        new dev.ikm.komet.kview.events.genediting.PropertyPanelEvent(evt.getComponent(), PropertyPanelEvent.OPEN_PANEL));
-            }
-        };
+        Subscriber<MakeGenEditingWindowEvent> makeGenEditWindowEventSubscriber = evt ->
+                makeGenEditWindow(evt.getComponent(), evt.getViewProperties());
 
         journalEventBus.subscribe(journalTopic, MakeGenEditingWindowEvent.class, makeGenEditWindowEventSubscriber);
 
@@ -511,7 +503,7 @@ public class JournalController {
 
                         publicId = semanticFacade.publicId();
                         // TODO save preferences of window's (position and size) such as the general editing chapter window.
-                        makeGenEditWindow(semanticFacade, windowView.makeOverridableViewProperties(), false);
+                        makeGenEditWindow(semanticFacade, windowView.makeOverridableViewProperties());
                     }
                     consumer.accept(publicId);
                     success = true;
@@ -1553,19 +1545,14 @@ public class JournalController {
         patternKlWindow.onShown();
     }
 
-    private void makeGenEditWindow(EntityFacade entityFacade, ViewProperties viewProperties, boolean openProperties) {
+    private void makeGenEditWindow(EntityFacade entityFacade, ViewProperties viewProperties) {
         // TODO: Use pluggable service loader to load KlWindowFactories. and locate GenEditingKlWindow.
         GenEditingKlWindowFactory entityKlWindowFactory = new GenEditingKlWindowFactory();
         GenEditingKlWindow genEditingKlWindow = entityKlWindowFactory.create(journalTopic, entityFacade, viewProperties, null);
         // Adding the concept window panel to the workspace.
         workspace.getWindows().add(genEditingKlWindow);
         genEditingKlWindow.onShown(); // TODO: Revisit. JavaFX post render issue. Must be called after Node is rendered (realized). When not realized the implied style classes don't exist and returns null.
-        genEditingKlWindow.setOnClose(() -> workspace.getWindows().remove(genEditingKlWindow));
 
-        // flag set by caller to open the properties bumpout on window creation
-        if (openProperties) {
-            EvtBusFactory.getDefaultEvtBus().publish(genEditingKlWindow.getWindowTopic(),
-                    new dev.ikm.komet.kview.events.genediting.PropertyPanelEvent(entityFacade, PropertyPanelEvent.NO_SELECTION_MADE_PANEL));
-        }
+        genEditingKlWindow.setOnClose(() -> workspace.getWindows().remove(genEditingKlWindow));
     }
 }

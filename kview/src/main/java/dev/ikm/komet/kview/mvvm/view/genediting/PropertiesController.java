@@ -71,12 +71,17 @@ public class PropertiesController {
     }
     private Pane currentEditPane;
 
+    private Pane closePropsPane;
+
+    private ClosePropertiesController ClosePropertiesController;
+
     @InjectViewModel
     private SimpleViewModel propertiesViewModel;
 
     Subscriber<PropertyPanelEvent> showPanelSubscriber;
 
     Subscriber<GenEditingEvent> genEditingEventSubscriber;
+
 
     JFXNode<Pane, SemanticFieldsController> editFieldsJfxNode;
 
@@ -100,6 +105,20 @@ public class PropertiesController {
         });
         editFieldsJfxNode = FXMLMvvmLoader.make(config);
 
+        Config closePropertiesConfig = new Config(this.getClass().getResource("close-properties.fxml"))
+                .addNamedViewModel(new NamedVm("propertiesViewModel", propertiesViewModel));
+
+        JFXNode<Pane, ClosePropertiesController> closePropsJfxNode = FXMLMvvmLoader.make(closePropertiesConfig);
+        closePropsPane = closePropsJfxNode.node();
+        ClosePropertiesController = closePropsJfxNode.controller();
+        genEditingEventSubscriber = evt -> {
+            LOG.info("Publish event type: " + evt.getEventType());
+
+            contentBorderPane.setCenter(closePropsPane);
+        };
+        EvtBusFactory.getDefaultEvtBus().subscribe(propertiesViewModel.getPropertyValue(CURRENT_JOURNAL_WINDOW_TOPIC),
+                GenEditingEvent.class, genEditingEventSubscriber);
+
         showPanelSubscriber = evt -> {
             LOG.info("Show Panel by event type: " + evt.getEventType());
             propertyToggleButtonGroup.selectToggle(addEditButton);
@@ -110,20 +129,17 @@ public class PropertiesController {
                 semanticFieldsViewModel.setPropertyValue(FIELD_INDEX, -1);
             } else if (evt.getEventType() == PropertyPanelEvent.SHOW_EDIT_SINGLE_SEMANTIC_FIELD) {
                 semanticFieldsViewModel.setPropertyValue(FIELD_INDEX, evt.getObservableFieldIndex());
+            } else if (evt.getEventType() == PropertyPanelEvent.NO_SELECTION_MADE_PANEL) {
+                // change the heading on the top of the panel
+                ClosePropertiesController.setHeadingText("No Selection Made");
+                contentBorderPane.setCenter(closePropsPane);
             }
         };
         EvtBusFactory.getDefaultEvtBus().subscribe(propertiesViewModel.getPropertyValue(WINDOW_TOPIC), PropertyPanelEvent.class, showPanelSubscriber);
 
-        genEditingEventSubscriber = evt -> {
-            LOG.info("Publish event type: " + evt.getEventType());
-            Config closePropertiesConfig = new Config(this.getClass().getResource("close-properties.fxml"))
-                    .addNamedViewModel(new NamedVm("propertiesViewModel", propertiesViewModel));
 
-            JFXNode<Pane, ClosePropertiesController> closePropsJfxNode = FXMLMvvmLoader.make(closePropertiesConfig);
-            contentBorderPane.setCenter(closePropsJfxNode.node());
-        };
-        EvtBusFactory.getDefaultEvtBus().subscribe(propertiesViewModel.getPropertyValue(CURRENT_JOURNAL_WINDOW_TOPIC),
-                GenEditingEvent.class, genEditingEventSubscriber);
+
+        //evt.getEventType() == PropertyPanelEvent.NO_SELECTION_MADE_PANEL
     }
 
 

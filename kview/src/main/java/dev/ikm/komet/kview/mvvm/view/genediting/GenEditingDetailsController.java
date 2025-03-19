@@ -446,15 +446,13 @@ public class GenEditingDetailsController {
                 if (isOpen(propertiesSlideoutTrayPane)) {
                     slideIn(propertiesSlideoutTrayPane, detailsOuterBorderPane);
                 }
-            } else if (evt.getEventType() == PropertyPanelEvent.OPEN_PANEL) {
+            } else if (evt.getEventType() == PropertyPanelEvent.OPEN_PANEL
+                || evt.getEventType() == PropertyPanelEvent.NO_SELECTION_MADE_PANEL) {
                 LOG.info("propBumpOutListener - Opening Properties bumpout toggle = " + propertiesToggleButton.isSelected());
                 propertiesToggleButton.setSelected(true);
                 if (isClosed(propertiesSlideoutTrayPane)) {
                     slideOut(propertiesSlideoutTrayPane, detailsOuterBorderPane);
                 }
-            } else if (evt.getEventType() == PropertyPanelEvent.NO_SELECTION_MADE_PANEL) {
-                //FIXME
-                // open and change what is in the center...? need to figure out what pane(s) were are swapping or changing here
             }
         };
         EvtBusFactory.getDefaultEvtBus().subscribe(genEditingViewModel.getPropertyValue(WINDOW_TOPIC), PropertyPanelEvent.class, propertiesEventSubscriber);

@@ -69,8 +69,8 @@
 
         <!-- Tinkar Core Variables -->
         <tinkar-core.groupId>dev.ikm.tinkar</tinkar-core.groupId>
-        <tinkar-composer.version>1.7.0-SNAPSHOT</tinkar-composer.version>
-        <tinkar-core.version>1.90.0</tinkar-core.version>
+        <tinkar-composer.version>1.6.0</tinkar-composer.version>
+        <tinkar-core.version>1.91.0-SNAPSHOT</tinkar-core.version>
 
         <!-- IKM Evrete Variables -->
         <ikm-evrete.groupId>org.evrete</ikm-evrete.groupId>

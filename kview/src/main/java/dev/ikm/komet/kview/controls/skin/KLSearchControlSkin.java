@@ -248,6 +248,8 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
                 resultsPane.setVisible(true);
             }
         });
+
+        // initialize the filter options
         filterOptionsPopup.inheritedFilterOptionsProperty().setValue(loadFilterOptions(control));
 
         // listen for changes to the filter options
@@ -288,7 +290,8 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
                 //TODO Type, Module, Language, Description Type, Kind of, Membership, Sort By
             }
             //FIXME refresh the navigator...???
-            //resultsPane.getItems()
+            //resultsPane.getItems()control.resultsProperty()
+            // control.resultsProperty()
         });
 
         // listen for changes to the filter options
@@ -321,10 +324,9 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
     private FilterOptions loadFilterOptions(KLSearchControl control) {
         FilterOptions filterOptions = new FilterOptions();
 
-        //FIXME I need the viewProperties; one layer up
         ViewProperties viewProperties = control.getViewProperties();
-        // get parent menu settings
 
+        // get parent menu settings
         ObservableCoordinate parentView = viewProperties.parentView();
         for (ObservableCoordinate<?> observableCoordinate : parentView.getCompositeCoordinates()) {
             if (observableCoordinate instanceof ObservableStampCoordinate observableStampCoordinate) {
@@ -351,6 +353,13 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
 
                 filterOptions.getPath().selectedOptions().clear();
                 filterOptions.getPath().selectedOptions().addAll(defaultSelectedPaths);
+
+                // MODULE
+                filterOptions.getModule().defaultOptions().clear();
+                observableStampCoordinate.moduleNids().intStream().forEach(moduleNid -> {
+                    String moduleStr = viewProperties.calculator().getPreferredDescriptionStringOrNid(moduleNid);
+                    filterOptions.getModule().defaultOptions().add(moduleStr);
+                });
 
                 // TIME
                 filterOptions.getDate().defaultOptions().clear();

@@ -1,6 +1,9 @@
 package dev.ikm.komet.kview.controls.skin;
 
+import static dev.ikm.komet.framework.events.appevents.RefreshCalculatorCacheEvent.REFRESH_CACHE;
 import static dev.ikm.tinkar.common.service.PrimitiveData.PREMUNDANE_TIME;
+import static dev.ikm.tinkar.events.FrameworkTopics.CALCULATOR_CACHE_TOPIC;
+import dev.ikm.komet.framework.events.appevents.RefreshCalculatorCacheEvent;
 import dev.ikm.komet.framework.view.ObservableCoordinate;
 import dev.ikm.komet.framework.view.ObservableStampCoordinate;
 import dev.ikm.komet.framework.view.ViewProperties;
@@ -12,6 +15,7 @@ import dev.ikm.komet.kview.controls.KLSearchControl;
 import dev.ikm.komet.navigator.graph.Navigator;
 import dev.ikm.tinkar.coordinate.stamp.StateSet;
 import dev.ikm.tinkar.coordinate.view.calculator.ViewCalculator;
+import dev.ikm.tinkar.events.EvtBusFactory;
 import dev.ikm.tinkar.terms.ConceptFacade;
 import dev.ikm.tinkar.terms.State;
 import dev.ikm.tinkar.terms.TinkarTerm;
@@ -289,9 +293,9 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
 
                 //TODO Type, Module, Language, Description Type, Kind of, Membership, Sort By
             }
-            //FIXME refresh the navigator...???
-            //resultsPane.getItems()control.resultsProperty()
-            // control.resultsProperty()
+            // fire event to refresh navigator
+            EvtBusFactory.getDefaultEvtBus().publish(CALCULATOR_CACHE_TOPIC, new RefreshCalculatorCacheEvent("filterOptions changed", REFRESH_CACHE));
+
         });
 
         // listen for changes to the filter options
@@ -302,7 +306,9 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
             filterOptionsPopup.filterOptionsProperty().removeListener(changeListener);
             filterOptionsPopup.inheritedFilterOptionsProperty().setValue(loadFilterOptions(control));
             filterOptionsPopup.filterOptionsProperty().addListener(changeListener);
-            //FIXME refresh the navigator...???
+
+            // fire event to refresh navigator
+            EvtBusFactory.getDefaultEvtBus().publish(CALCULATOR_CACHE_TOPIC, new RefreshCalculatorCacheEvent("parent changed", REFRESH_CACHE));
         });
     }
 

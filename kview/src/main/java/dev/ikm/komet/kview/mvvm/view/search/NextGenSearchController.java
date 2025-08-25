@@ -273,7 +273,6 @@ public class NextGenSearchController {
     }
 
     private FilterOptions loadFilterOptions() {
-        Instant start = Instant.now();
         FilterOptions filterOptions = new FilterOptions();
 
         // get parent menu settings

@@ -1,10 +1,17 @@
 package dev.ikm.komet.kview.controls.skin;
 
+import static dev.ikm.tinkar.common.service.PrimitiveData.PREMUNDANE_TIME;
+import dev.ikm.komet.framework.view.ObservableCoordinate;
+import dev.ikm.komet.framework.view.ObservableStampCoordinate;
+import dev.ikm.komet.framework.view.ViewProperties;
+import dev.ikm.komet.kview.controls.FilterOptions;
 import dev.ikm.komet.kview.controls.FilterOptionsPopup;
 import dev.ikm.komet.kview.controls.IconRegion;
 import dev.ikm.komet.kview.controls.InvertedTree;
 import dev.ikm.komet.kview.controls.KLSearchControl;
 import dev.ikm.komet.navigator.graph.Navigator;
+import dev.ikm.tinkar.coordinate.stamp.StateSet;
+import dev.ikm.tinkar.coordinate.view.calculator.ViewCalculator;
 import dev.ikm.tinkar.terms.ConceptFacade;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -36,6 +43,10 @@ import javafx.scene.text.Text;
 import javafx.util.Duration;
 import javafx.util.Subscription;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -55,6 +66,9 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
     private static final double SEARCH_RESULT_HEIGHT = 43; // 38 + 5
     private static final PseudoClass FILTER_SET = PseudoClass.getPseudoClass("filter-set");
     private static final PseudoClass FILTER_SHOWING = PseudoClass.getPseudoClass("filter-showing");
+
+    private static final List<String> ALL_STATES = StateSet.ACTIVE_INACTIVE_AND_WITHDRAWN.toEnumSet().stream().map(s -> s.name()).toList();
+    private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy");
 
     private final TextField textField;
     private final StackPane searchPane;
@@ -228,6 +242,61 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
                 resultsPane.setVisible(true);
             }
         });
+        filterOptionsPopup.inheritedFilterOptionsProperty().setValue(loadFilterOptions(control));
+    }
+
+    private FilterOptions loadFilterOptions(KLSearchControl control) {
+        FilterOptions filterOptions = new FilterOptions();
+
+        //FIXME I need the viewProperties; one layer up
+        ViewProperties viewProperties = control.getViewProperties();
+        // get parent menu settings
+
+        ObservableCoordinate parentView = viewProperties.parentView();
+        for (ObservableCoordinate<?> observableCoordinate : parentView.getCompositeCoordinates()) {
+            if (observableCoordinate instanceof ObservableStampCoordinate observableStampCoordinate) {
+                // populate the STATUS
+                StateSet currentStates = observableStampCoordinate.allowedStatesProperty().getValue();
+                List<String> currentStatesStr = currentStates.toEnumSet().stream().map(s -> s.name()).toList();
+
+                filterOptions.getStatus().selectedOptions().clear();
+                filterOptions.getStatus().selectedOptions().addAll(currentStatesStr);
+
+                filterOptions.getStatus().availableOptions().clear();
+                filterOptions.getStatus().availableOptions().addAll(ALL_STATES);
+
+                filterOptions.getStatus().defaultOptions().clear();
+                filterOptions.getStatus().defaultOptions().addAll(currentStatesStr);
+
+                // populate the PATH
+                ConceptFacade currentPath = observableStampCoordinate.pathConceptProperty().getValue();
+                String currentPathStr = currentPath.description();
+
+                List<String> defaultSelectedPaths = new ArrayList(List.of(currentPathStr));
+                filterOptions.getPath().defaultOptions().clear();
+                filterOptions.getPath().defaultOptions().addAll(defaultSelectedPaths);
+
+                filterOptions.getPath().selectedOptions().clear();
+                filterOptions.getPath().selectedOptions().addAll(defaultSelectedPaths);
+
+                // TIME
+                filterOptions.getDate().defaultOptions().clear();
+                filterOptions.getDate().selectedOptions().clear();
+
+                Long time = observableStampCoordinate.timeProperty().getValue();
+                if (time.equals(Long.MAX_VALUE)) {
+                    filterOptions.getDate().selectedOptions().add("Latest");
+                } else if (time.equals(PREMUNDANE_TIME)) {
+                    //FIXME the custom control doesn't support premundane yet
+                    filterOptions.getDate().selectedOptions().add("Latest");
+                } else {
+                    Date date = new Date(time);
+                    filterOptions.getDate().selectedOptions().add(simpleDateFormat.format(date));
+                }
+                filterOptions.getDate().defaultOptions().addAll(filterOptions.getDate().selectedOptions());
+            }
+        }
+        return filterOptions;
     }
 
     /** {@inheritDoc} **/

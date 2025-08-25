@@ -220,6 +220,7 @@ public class ConceptPatternNavController {
         Navigator navigator = new ViewNavigator(viewProperties.nodeView());
         KLSearchControl searchControl = new KLSearchControl();
         searchControl.setNavigator(navigator);
+        searchControl.viewPropertiesObjectProperty().set(viewProperties);
         searchControl.setOnAction(_ -> {
             ViewCalculator calculator = viewProperties.calculator();
             searchControl.setResultsPlaceholder("Searching..."); // DUMMY, resources?

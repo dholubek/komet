@@ -13,11 +13,14 @@ import dev.ikm.komet.navigator.graph.Navigator;
 import dev.ikm.tinkar.coordinate.stamp.StateSet;
 import dev.ikm.tinkar.coordinate.view.calculator.ViewCalculator;
 import dev.ikm.tinkar.terms.ConceptFacade;
+import dev.ikm.tinkar.terms.State;
+import dev.ikm.tinkar.terms.TinkarTerm;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
@@ -43,6 +46,7 @@ import javafx.scene.text.Text;
 import javafx.util.Duration;
 import javafx.util.Subscription;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -78,6 +82,8 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
 
     private final ListView<KLSearchControl.SearchResult> resultsPane;
     private final FilterOptionsPopup filterOptionsPopup;
+
+    private Subscription parentSubscription;
 
     /**
      * <p>Creates a {@link KLSearchControlSkin} instance.
@@ -243,6 +249,73 @@ public class KLSearchControlSkin extends SkinBase<KLSearchControl> {
             }
         });
         filterOptionsPopup.inheritedFilterOptionsProperty().setValue(loadFilterOptions(control));
+
+        // listen for changes to the filter options
+        ChangeListener<FilterOptions> changeListener = ((obs, oldFilterOptions, newFilterOptions) -> {
+            ViewProperties viewProperties = control.getViewProperties();
+            if (newFilterOptions != null) {
+                if (!newFilterOptions.getStatus().selectedOptions().isEmpty()) {
+                    StateSet stateSet = StateSet.make(
+                            newFilterOptions.getStatus().selectedOptions().stream().map(
+                                    s -> State.valueOf(s.toUpperCase())).toList());
+                    // update the STATUS
+                    viewProperties.nodeView().stampCoordinate().allowedStatesProperty().setValue(stateSet);
+                }
+                if (!newFilterOptions.getPath().selectedOptions().isEmpty()) {
+                    //NOTE: there is no known way to set multiple paths
+                    String pathStr = newFilterOptions.getPath().selectedOptions().stream().findFirst().get();
+
+                    ConceptFacade conceptPath = switch(pathStr) {
+                        case "Master path" -> TinkarTerm.MASTER_PATH;
+                        case "Primordial path" -> TinkarTerm.PRIMORDIAL_PATH;
+                        case "Sandbox path" -> TinkarTerm.SANDBOX_PATH;
+                        default -> TinkarTerm.DEVELOPMENT_PATH;
+                    };
+                    // update the Path
+                    viewProperties.nodeView().stampCoordinate().pathConceptProperty().setValue(conceptPath);
+                }
+                if (!newFilterOptions.getDate().selectedOptions().isEmpty() &&
+                        !oldFilterOptions.getDate().selectedOptions().equals(newFilterOptions.getDate().selectedOptions())) {
+                    long millis = getMillis(newFilterOptions);
+                    // update the time
+                    viewProperties.nodeView().stampCoordinate().timeProperty().set(millis);
+                } else {
+                    // revert to the Latest
+                    Date latest = new Date();
+                    viewProperties.nodeView().stampCoordinate().timeProperty().set(latest.getTime());
+                }
+
+                //TODO Type, Module, Language, Description Type, Kind of, Membership, Sort By
+            }
+            //FIXME refresh the navigator...???
+            //resultsPane.getItems()
+        });
+
+        // listen for changes to the filter options
+        filterOptionsPopup.filterOptionsProperty().addListener(changeListener);
+
+        // listen to changes to the parent of the current overrideable view
+        parentSubscription = control.getViewProperties().parentView().subscribe((oldValue, newValue) -> {
+            filterOptionsPopup.filterOptionsProperty().removeListener(changeListener);
+            filterOptionsPopup.inheritedFilterOptionsProperty().setValue(loadFilterOptions(control));
+            filterOptionsPopup.filterOptionsProperty().addListener(changeListener);
+            //FIXME refresh the navigator...???
+        });
+    }
+
+    private long getMillis(FilterOptions newFilterOptions) {
+        int lastElementIndex = newFilterOptions.getDate().selectedOptions().size() - 1;
+        String newDate = newFilterOptions.getDate().selectedOptions().get(lastElementIndex);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+        Date date;
+        try {
+            date = sdf.parse(newDate);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        long millis = date.getTime();
+        return millis;
     }
 
     private FilterOptions loadFilterOptions(KLSearchControl control) {
